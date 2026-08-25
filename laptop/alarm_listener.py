@@ -72,7 +72,15 @@ def find_player():
         import winsound
 
         def play_windows(path):
-            winsound.PlaySound(path, winsound.SND_FILENAME)
+            try:
+                winsound.PlaySound(path, winsound.SND_FILENAME)
+            except Exception as err:
+                # PlaySound goes through the default audio device and gives up
+                # quietly if that device rejects the file. Beep takes a
+                # different path, so it's worth trying before declaring defeat.
+                print("  (PlaySound failed: {} — falling back to Beep)".format(err))
+                for freq in (880, 660, 880, 660):
+                    winsound.Beep(freq, 250)
 
         return play_windows
 
@@ -112,7 +120,19 @@ def prevent_sleep():
 def force_max_volume():
     """Best effort — a muted laptop is the most common reason an alarm fails."""
     try:
-        if SYSTEM == "Darwin":
+        if SYSTEM == "Windows":
+            # No CLI for volume on Windows, but the media keys are always wired
+            # up: VK_VOLUME_UP both unmutes and steps the level, so spamming it
+            # lands at 100% from wherever it was. This is the most common reason
+            # a Windows alarm appears to do nothing at all.
+            import ctypes
+
+            VK_VOLUME_UP = 0xAF
+            KEYEVENTF_KEYUP = 0x0002
+            for _ in range(50):
+                ctypes.windll.user32.keybd_event(VK_VOLUME_UP, 0, 0, 0)
+                ctypes.windll.user32.keybd_event(VK_VOLUME_UP, 0, KEYEVENTF_KEYUP, 0)
+        elif SYSTEM == "Darwin":
             subprocess.run(["osascript", "-e", "set volume output volume 100"], check=False)
         elif SYSTEM == "Linux":
             if shutil.which("pactl"):
@@ -120,9 +140,50 @@ def force_max_volume():
                 subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "0"], check=False)
             elif shutil.which("amixer"):
                 subprocess.run(["amixer", "-q", "sset", "Master", "100%", "unmute"], check=False)
-        # Windows has no built-in CLI for this; see the README.
     except Exception:
         pass
+
+
+def diagnose(wav_path, player):
+    """Reports what the audio setup looks like, testing each layer separately."""
+    print("system      : {} {}".format(SYSTEM, platform.release()))
+    print("python      : {}".format(sys.version.split()[0]))
+    print("wav file    : {} ({} bytes)".format(wav_path, os.path.getsize(wav_path)))
+    print("player found: {}".format("yes" if player else "NO — this is the problem"))
+
+    if SYSTEM == "Windows":
+        print("\nRaising volume to maximum...")
+        force_max_volume()
+
+        print("Test 1 — winsound.Beep (does not touch the wav file):")
+        try:
+            import winsound
+            winsound.Beep(880, 1000)
+            print("  no error. Did you hear a 1-second tone?")
+        except Exception as err:
+            print("  FAILED: {}".format(err))
+
+        print("Test 2 — winsound.PlaySound on our siren file:")
+        try:
+            import winsound
+            winsound.PlaySound(wav_path, winsound.SND_FILENAME)
+            print("  no error. Did you hear a 2-second siren?")
+        except Exception as err:
+            print("  FAILED: {}".format(err))
+    else:
+        print("\nRaising volume and playing the siren once...")
+        force_max_volume()
+        if player:
+            player(wav_path)
+            print("  played. Did you hear it?")
+
+    print("\nIf that was silent but nothing errored, the sound is being produced")
+    print("and sent somewhere you can't hear it. Check the per-app level in the")
+    if SYSTEM == "Windows":
+        print("volume mixer, and check which output device is default — Bluetooth")
+        print("headphones you'd forgotten about are the usual culprit.")
+    else:
+        print("mixer, and check which output device is default.")
 
 
 class Alarm:
@@ -247,13 +308,20 @@ def main():
     parser.add_argument("--seconds", type=int, default=ALARM_SECONDS,
                         help="how long one siren burst rings (default %(default)s)")
     parser.add_argument("--test", action="store_true", help="ring once and exit")
+    parser.add_argument("--diagnose", action="store_true",
+                        help="report why there's no sound, and exit")
     args = parser.parse_args()
+
+    wav_path = build_alarm_wav(os.path.join(tempfile.gettempdir(), "gmail-alarm.wav"))
+    player = find_player()
+
+    if args.diagnose:
+        diagnose(wav_path, player)
+        return
 
     if not args.topic:
         parser.error("no topic given — pass it as an argument or set NTFY_TOPIC")
 
-    wav_path = build_alarm_wav(os.path.join(tempfile.gettempdir(), "gmail-alarm.wav"))
-    player = find_player()
     if not player:
         print("WARNING: no audio player found — falling back to the terminal bell, "
               "which will not wake you. See the README.")

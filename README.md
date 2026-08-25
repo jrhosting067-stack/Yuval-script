@@ -126,14 +126,18 @@ matter:
 | --- | --- | --- |
 | **macOS** | `caffeinate -s python3 alarm_listener.py your-topic` | automatic |
 | **Linux** | `systemd-inhibit --what=sleep python3 alarm_listener.py your-topic` | automatic |
-| **Windows** | automatic (idle sleep only — also set Settings → System → Power → Screen and sleep → *Never* when plugged in) | set it by hand |
+| **Windows** | automatic (idle sleep only — also set Settings → System → Power → Screen and sleep → *Never* when plugged in) | automatic |
 
 On Windows the listener asks the OS to suppress idle sleep while it runs, which
 needs no admin rights but does not survive closing the lid or choosing Sleep.
 
-The listener forces output volume to 100% on macOS and Linux before each siren.
-Windows has no built-in command for that, so set the volume yourself. On every
-platform: **unplug the headphones**.
+The listener forces output volume to 100% before each siren on all three
+platforms — on Windows by pressing the volume-up media key, which also unmutes.
+On every platform: **unplug the headphones**.
+
+**No sound?** Run `python3 alarm_listener.py --diagnose`. It tests each layer
+separately — whether a player was found, whether a bare system beep works,
+whether the siren file plays — and says which one is failing.
 
 Closing the lid sleeps most laptops regardless of the above — on macOS that
 can't be prevented without an external display or third-party tooling, so leave
