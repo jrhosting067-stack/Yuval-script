@@ -30,6 +30,7 @@ set up from any browser, anywhere.
 
 | Path | What it is |
 | --- | --- |
+| `laptop/install.sh` | One-command setup for the laptop half (macOS and Linux). |
 | `laptop/alarm_listener.py` | Runs on the laptop that rings. Standard library Python, nothing to install. |
 | `apps-script/Code.gs` | The Gmail-side script. All configuration lives in the `CONFIG` block at the top. |
 | `apps-script/appsscript.json` | Manifest — timezone and OAuth scopes. |
@@ -44,7 +45,16 @@ First pick a topic name, long and random — `yuval-alarm-8f2b91c4d7`, not
 guesses the name can ring your laptop. This string is the only secret in the
 system, and both halves of the setup need it.
 
-Then, on the laptop that should ring:
+Then, on the laptop that should ring — one command does the whole laptop half
+(downloads the listener, plays a test siren, optionally sets up autostart, and
+prints the topic to paste into Apps Script):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jrhosting067-stack/Yuval-script/HEAD/laptop/install.sh | bash
+```
+
+It generates a random topic for you, so you can skip picking one. To do it by
+hand instead:
 
 ```bash
 python3 alarm_listener.py your-topic-here --test   # siren now, then exit
