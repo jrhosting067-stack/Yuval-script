@@ -62,7 +62,10 @@ fi
 # --- Download --------------------------------------------------------------
 say "Installing to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
-if ! curl -fsSL "$RAW_URL" -o "$INSTALL_DIR/alarm_listener.py"; then
+# Cache-buster: GitHub's raw CDN caches per edge node, and an edge that hands
+# out a stale listener is a silent failure — you'd never know until it didn't
+# wake you.
+if ! curl -fsSL "$RAW_URL?cb=$(date +%s)" -o "$INSTALL_DIR/alarm_listener.py"; then
   echo "Download failed. Check your connection and try again." >&2
   exit 1
 fi

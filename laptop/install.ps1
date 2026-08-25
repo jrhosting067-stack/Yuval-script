@@ -58,7 +58,11 @@ if (-not $topic) {
 Write-Step "Installing to $InstallDir"
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 try {
-    Invoke-WebRequest -Uri $RawUrl -OutFile $ScriptPath -UseBasicParsing
+    # Cache-buster: GitHub's raw CDN caches per edge node, and an edge that
+    # hands out a stale listener is a silent failure - you'd never know until
+    # it didn't wake you.
+    $cb = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    Invoke-WebRequest -Uri "$RawUrl`?cb=$cb" -OutFile $ScriptPath -UseBasicParsing
 } catch {
     Write-Host "Download failed: $_" -ForegroundColor Red
     return
