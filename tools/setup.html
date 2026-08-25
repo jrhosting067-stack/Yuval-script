@@ -1,0 +1,807 @@
+<title>Gmail Alarm Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground:  #E9ECF1;
+    --surface: #FFFFFF;
+    --sunken:  #F3F5F8;
+    --ink:     #141821;
+    --muted:   #5C6577;
+    --line:    #D3D8E1;
+    --accent:  #9A5E00;
+    --accent-ink: #FFFFFF;
+    --good:    #1C7A52;
+    --shadow:  0 1px 2px rgba(20,24,33,.06), 0 8px 24px rgba(20,24,33,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:  #0F1219;
+      --surface: #171B24;
+      --sunken:  #10131A;
+      --ink:     #E4E7EC;
+      --muted:   #8A93A3;
+      --line:    #272D39;
+      --accent:  #FFB000;
+      --accent-ink: #14180F;
+      --good:    #46C98C;
+      --shadow:  0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:  #0F1219;
+    --surface: #171B24;
+    --sunken:  #10131A;
+    --ink:     #E4E7EC;
+    --muted:   #8A93A3;
+    --line:    #272D39;
+    --accent:  #FFB000;
+    --accent-ink: #14180F;
+    --good:    #46C98C;
+    --shadow:  0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  header { display: flex; flex-direction: column; gap: 10px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight: 600;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+  }
+
+  .lede { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .step-head { display: flex; align-items: baseline; gap: 12px; }
+
+  .num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-radius: 5px;
+    padding: 2px 8px;
+    flex: none;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+
+  .note { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 560px) { .fields { grid-template-columns: 1fr; } }
+
+  label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; }
+
+  .hint { font-weight: 400; color: var(--muted); font-size: 13px; }
+
+  input[type="text"] {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 10px 12px;
+    width: 100%;
+  }
+  input[type="text"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+
+  .both {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 14.5px; color: var(--muted);
+  }
+  .both input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+  pre {
+    margin: 0;
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink);
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  pre.short { max-height: none; }
+
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: none;
+    border-radius: 7px;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  button.done { background: var(--good); }
+
+  .status { font-size: 14px; color: var(--muted); }
+
+  ol.clicks { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 9px; }
+  ol.clicks li { padding-left: 4px; }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .92em;
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  .topic {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  footer { color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 20px; }
+  footer p { margin: 0 0 8px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Gmail Alarm</div>
+    <h1>Two boxes, two copies, four clicks.</h1>
+    <p class="lede">Fill in what should wake you. This builds the code with your channel
+      already in it, so you never have to find a line number in a file.</p>
+  </header>
+
+  <section class="step">
+    <div class="step-head"><span class="num">1</span><h2>Start the listener on your laptop</h2></div>
+    <p class="note">Paste this into PowerShell and leave the window open. It is the thing that makes noise.</p>
+    <pre class="short" id="psCode">$t = "gmail-alarm-0fffed6e0ac1"
+Set-Content "$env:USERPROFILE\.gmail-alarm\topic" $t
+py "$env:USERPROFILE\.gmail-alarm\alarm_listener.py" $t</pre>
+    <div class="row">
+      <button id="copyPs">Copy command</button>
+      <span class="status" id="psStatus"></span>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head"><span class="num">2</span><h2>Say what should wake you</h2></div>
+    <div class="fields">
+      <label>Sender
+        <span class="hint">An address, or @domain for all of them</span>
+        <input type="text" id="sender" placeholder="alerts@example.com" value="">
+      </label>
+      <label>Word in the subject
+        <span class="hint">Leave blank to match any subject</span>
+        <input type="text" id="subject" placeholder="URGENT" value="">
+      </label>
+    </div>
+    <label class="both"><input type="checkbox" id="both" checked> Both must match (untick to wake on either one)</label>
+    <p class="note" id="summary"></p>
+  </section>
+
+  <section class="step">
+    <div class="step-head"><span class="num">3</span><h2>Copy the finished code</h2></div>
+    <p class="note">Your channel <span class="topic">gmail-alarm-0fffed6e0ac1</span> is already in it.</p>
+    <pre id="code"></pre>
+    <div class="row">
+      <button id="copyCode">Copy code</button>
+      <span class="status" id="codeStatus"></span>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="step-head"><span class="num">4</span><h2>Paste it into Google</h2></div>
+    <ol class="clicks">
+      <li>Open <a href="https://script.google.com/home/projects/create" target="_blank" rel="noopener">script.google.com</a> and click <strong>New project</strong>.</li>
+      <li>Click in the editor, press <code>Ctrl+A</code>, then <code>Ctrl+V</code>.</li>
+      <li>Click the save icon.</li>
+      <li>In the dropdown that says <code>checkForAlarmEmails</code>, pick <strong>setup</strong> and click <strong>Run</strong>.</li>
+      <li>Google warns the app is unverified: <strong>Advanced</strong> &rarr; <strong>Go to project (unsafe)</strong> &rarr; <strong>Allow</strong>. It is your own script.</li>
+      <li>Change the dropdown to <strong>testAlarm</strong> and click <strong>Run</strong>.</li>
+    </ol>
+    <p class="note">Your laptop should scream, as long as the PowerShell window from step 1 is still open.</p>
+  </section>
+
+  <footer>
+    <p>Nothing on this page is sent anywhere. The code is assembled in your browser.</p>
+    <p>Your channel name is the only password in the system: anyone who knows it can ring your laptop. Keep it off public pages.</p>
+  </footer>
+
+</div>
+
+<script>
+const TOPIC = "gmail-alarm-0fffed6e0ac1";
+const TEMPLATE = `/**
+ * Gmail Alarm
+ * -----------
+ * A time-driven Apps Script that runs every minute, looks for mail matching a
+ * sender / subject rule, and fires a loud alarm on your phone until you
+ * acknowledge it by opening the email.
+ *
+ * Everything here runs on free tiers: Apps Script triggers, Gmail, and ntfy.sh
+ * (open-source push, no account needed).
+ *
+ * First run:  select setup()  -> Run  -> approve the OAuth prompt.
+ * Test it:    select testAlarm() -> Run (fires the alarm without any email).
+ * Stop it:    select teardown() -> Run.
+ */
+
+// ---------------------------------------------------------------------------
+// CONFIG — edit this block, nothing else.
+// ---------------------------------------------------------------------------
+const CONFIG = {
+  // Who counts as an alarm. Leave a list empty to ignore that criterion.
+  senders: ['alerts@example.com'],          // 'boss@work.com', '@pagerduty.com'
+  subjectContains: ['URGENT'],              // matched as Gmail subject: terms
+
+  // true  -> sender AND subject must both match
+  // false -> sender OR subject is enough
+  requireBoth: true,
+
+  // Anything extra you want ANDed into the Gmail search, e.g. 'has:attachment'.
+  extraQuery: '',
+
+  // Label applied by the Gmail filter (see gmail/filters.xml). The script also
+  // works without the filter — it searches by sender/subject directly — but the
+  // label makes it faster and gives you a place to eyeball what fired.
+  labelName: 'ALARM',
+
+  // How far back to look on each run. Covers a missed trigger or two.
+  lookbackMinutes: 15,
+
+  // --- Alarm channel: ntfy.sh (free, no signup) ---------------------------
+  // Install the "ntfy" app (Android/iOS), subscribe to the SAME topic string,
+  // and in the app set that topic's notification to your loudest alarm sound
+  // and allow it to override Do Not Disturb / enable Critical Alerts on iOS.
+  // The topic is a public secret: use a long random string, not "alarm".
+  ntfy: {
+    enabled: true,
+    server: 'https://ntfy.sh',
+    topic: 'CHANGE-ME-to-a-long-random-string-8f2b91',
+    title: 'WAKE UP',
+    // Opens Gmail when the notification is tapped.
+    clickUrl: 'https://mail.google.com/mail/u/0/#search/label%3AALARM'
+  },
+
+  // --- Backup channel: carrier email-to-SMS gateway (free) ----------------
+  // e.g. Verizon 5551234567@vtext.com, AT&T 5551234567@txt.att.net,
+  //      T-Mobile 5551234567@tmomail.net. Texts ring through most DND setups.
+  sms: {
+    enabled: false,
+    address: '5551234567@vtext.com'
+  },
+
+  // --- Backup channel: Google Calendar event 1 minute out -----------------
+  // The Calendar app's notification is another way through to a locked phone.
+  calendarPing: {
+    enabled: false,
+    minutesOut: 1
+  },
+
+  // Keep re-firing every minute until you open the email (or we give up).
+  escalation: {
+    maxRepeats: 15,           // total alarms per email, including the first
+    stopAfterMinutes: 30      // hard stop even if never acknowledged
+  },
+
+  // Optional: only ever fire during a window (e.g. overnight on-call).
+  // Hours are 0-23 in the script's time zone; the window may cross midnight.
+  activeHours: {
+    enabled: false,
+    startHour: 22,
+    endHour: 8
+  },
+
+  // Where to mail script errors. Blank = the account running the script.
+  errorNotifyEmail: '',
+
+  debug: false
+};
+
+// ---------------------------------------------------------------------------
+// Property keys
+// ---------------------------------------------------------------------------
+const PROP_SEEN = 'seenMessageIds';
+const PROP_ACTIVE = 'activeAlarm';
+const PROP_LAST_RUN = 'lastRunEpoch';
+const TRIGGER_FN = 'checkForAlarmEmails';
+
+// ---------------------------------------------------------------------------
+// Setup / teardown
+// ---------------------------------------------------------------------------
+
+/** Creates the label, installs the every-minute trigger, clears old state. */
+function setup() {
+  if (CONFIG.ntfy.enabled && CONFIG.ntfy.topic.indexOf('CHANGE-ME') === 0) {
+    throw new Error('Set CONFIG.ntfy.topic to your own random topic string first.');
+  }
+
+  if (!CONFIG.senders.length && !CONFIG.subjectContains.length) {
+    throw new Error('Set CONFIG.senders and/or CONFIG.subjectContains — ' +
+                    'with both empty every unread email would ring the alarm.');
+  }
+
+  if (!GmailApp.getUserLabelByName(CONFIG.labelName)) {
+    GmailApp.createLabel(CONFIG.labelName);
+  }
+
+  removeTriggers_();
+  ScriptApp.newTrigger(TRIGGER_FN).timeBased().everyMinutes(1).create();
+
+  const props = PropertiesService.getScriptProperties();
+  props.deleteProperty(PROP_ACTIVE);
+  props.setProperty(PROP_SEEN, JSON.stringify([]));
+  props.setProperty(PROP_LAST_RUN, String(nowEpoch_()));
+
+  Logger.log('Setup complete. Watching: ' + buildQuery_(nowEpoch_() - 60));
+}
+
+/** Removes the trigger. Nothing else runs after this. */
+function teardown() {
+  removeTriggers_();
+  PropertiesService.getScriptProperties().deleteProperty(PROP_ACTIVE);
+  Logger.log('Triggers removed.');
+}
+
+function removeTriggers_() {
+  ScriptApp.getProjectTriggers()
+    .filter(function (t) { return t.getHandlerFunction() === TRIGGER_FN; })
+    .forEach(function (t) { ScriptApp.deleteTrigger(t); });
+}
+
+/** Prints current state — handy when something feels stuck. */
+function showStatus() {
+  const props = PropertiesService.getScriptProperties();
+  const triggers = ScriptApp.getProjectTriggers()
+    .filter(function (t) { return t.getHandlerFunction() === TRIGGER_FN; });
+  Logger.log([
+    'triggers installed: ' + triggers.length,
+    'query: ' + buildQuery_(nowEpoch_() - CONFIG.lookbackMinutes * 60),
+    'active alarm: ' + (props.getProperty(PROP_ACTIVE) || 'none'),
+    'last run: ' + (props.getProperty(PROP_LAST_RUN) || 'never'),
+    'seen ids: ' + JSON.parse(props.getProperty(PROP_SEEN) || '[]').length
+  ].join('\\n'));
+}
+
+/** Fires the alarm right now so you can check volume and DND settings. */
+function testAlarm() {
+  fireAlarm_({
+    subject: 'Gmail Alarm test',
+    from: 'test@localhost',
+    permalink: CONFIG.ntfy.clickUrl,
+    id: 'test'
+  }, 1);
+  Logger.log('Test alarm sent.');
+}
+
+// ---------------------------------------------------------------------------
+// Main loop — this is what the every-minute trigger calls.
+// ---------------------------------------------------------------------------
+function checkForAlarmEmails() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;   // previous run still going; skip this minute
+
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const now = nowEpoch_();
+
+    escalateActiveAlarm_(props, now);
+
+    if (!withinActiveHours_(new Date())) {
+      props.setProperty(PROP_LAST_RUN, String(now));
+      return;
+    }
+
+    const since = now - CONFIG.lookbackMinutes * 60;
+    const threads = GmailApp.search(buildQuery_(since), 0, 20);
+    if (!threads.length) {
+      props.setProperty(PROP_LAST_RUN, String(now));
+      return;
+    }
+
+    const seen = JSON.parse(props.getProperty(PROP_SEEN) || '[]');
+    const label = GmailApp.getUserLabelByName(CONFIG.labelName);
+    let newest = null;
+
+    GmailApp.getMessagesForThreads(threads).forEach(function (messages) {
+      messages.forEach(function (message) {
+        const id = message.getId();
+        if (seen.indexOf(id) !== -1) return;
+        if (message.getDate().getTime() / 1000 < since) return;
+        if (!message.isUnread()) return;          // already dealt with by hand
+        if (!matches_(message)) return;
+
+        seen.push(id);
+        const hit = {
+          id: id,
+          subject: message.getSubject(),
+          from: message.getFrom(),
+          permalink: 'https://mail.google.com/mail/u/0/#all/' + message.getThread().getId()
+        };
+        if (label) message.getThread().addLabel(label);
+        if (!newest || message.getDate() > newest.date) {
+          newest = { hit: hit, date: message.getDate() };
+        }
+      });
+    });
+
+    props.setProperty(PROP_SEEN, JSON.stringify(seen.slice(-300)));
+    props.setProperty(PROP_LAST_RUN, String(now));
+
+    if (newest) {
+      fireAlarm_(newest.hit, 1);
+      props.setProperty(PROP_ACTIVE, JSON.stringify({
+        messageId: newest.hit.id,
+        subject: newest.hit.subject,
+        from: newest.hit.from,
+        permalink: newest.hit.permalink,
+        firstFiredAt: now,
+        lastFiredAt: now,
+        count: 1
+      }));
+    }
+  } catch (err) {
+    reportError_(err);
+    throw err;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Keeps ringing an unacknowledged alarm. Acknowledging = opening the email
+ * (it stops being unread), or removing the ALARM label, or deleting it.
+ */
+function escalateActiveAlarm_(props, now) {
+  const raw = props.getProperty(PROP_ACTIVE);
+  if (!raw) return;
+
+  const alarm = JSON.parse(raw);
+
+  if (isAcknowledged_(alarm.messageId)) {
+    props.deleteProperty(PROP_ACTIVE);
+    log_('Alarm acknowledged: ' + alarm.subject);
+    return;
+  }
+
+  const minutesUp = (now - alarm.firstFiredAt) / 60;
+  if (alarm.count >= CONFIG.escalation.maxRepeats ||
+      minutesUp >= CONFIG.escalation.stopAfterMinutes) {
+    props.deleteProperty(PROP_ACTIVE);
+    log_('Alarm gave up after ' + alarm.count + ' tries: ' + alarm.subject);
+    return;
+  }
+
+  alarm.count += 1;
+  alarm.lastFiredAt = now;
+  fireAlarm_(alarm, alarm.count);
+  props.setProperty(PROP_ACTIVE, JSON.stringify(alarm));
+}
+
+function isAcknowledged_(messageId) {
+  if (messageId === 'test') return true;
+  try {
+    const message = GmailApp.getMessageById(messageId);
+    if (!message) return true;
+    if (!message.isUnread()) return true;
+    if (message.isInTrash()) return true;
+    const label = GmailApp.getUserLabelByName(CONFIG.labelName);
+    if (label) {
+      const stillLabelled = message.getThread().getLabels().some(function (l) {
+        return l.getName() === CONFIG.labelName;
+      });
+      if (!stillLabelled) return true;
+    }
+    return false;
+  } catch (err) {
+    return true;   // message vanished — nothing left to ring about
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Matching
+// ---------------------------------------------------------------------------
+
+/** Gmail search string. \`after:\` takes epoch seconds, so this is minute-exact. */
+function buildQuery_(sinceEpoch) {
+  const parts = ['is:unread', 'after:' + sinceEpoch];
+
+  const senderClause = CONFIG.senders.length
+    ? '(' + CONFIG.senders.map(function (s) { return 'from:' + s; }).join(' OR ') + ')'
+    : '';
+  const subjectClause = CONFIG.subjectContains.length
+    ? '(' + CONFIG.subjectContains.map(function (s) {
+        return 'subject:"' + s.replace(/"/g, '') + '"';
+      }).join(' OR ') + ')'
+    : '';
+
+  if (senderClause && subjectClause) {
+    parts.push(CONFIG.requireBoth
+      ? senderClause + ' ' + subjectClause
+      : '(' + senderClause + ' OR ' + subjectClause + ')');
+  } else if (senderClause || subjectClause) {
+    parts.push(senderClause || subjectClause);
+  }
+
+  if (CONFIG.extraQuery) parts.push(CONFIG.extraQuery);
+  return parts.join(' ');
+}
+
+/**
+ * Second pass in JS. Gmail's search is fuzzy — it stems words and ignores
+ * punctuation — so re-check the raw header text before waking someone up.
+ */
+function matches_(message) {
+  const from = message.getFrom().toLowerCase();
+  const subject = (message.getSubject() || '').toLowerCase();
+
+  const senderOk = !CONFIG.senders.length || CONFIG.senders.some(function (s) {
+    return from.indexOf(s.toLowerCase()) !== -1;
+  });
+  const subjectOk = !CONFIG.subjectContains.length || CONFIG.subjectContains.some(function (s) {
+    return subject.indexOf(s.toLowerCase()) !== -1;
+  });
+
+  if (!CONFIG.senders.length || !CONFIG.subjectContains.length) {
+    return senderOk && subjectOk;
+  }
+  return CONFIG.requireBoth ? (senderOk && subjectOk) : (senderOk || subjectOk);
+}
+
+function withinActiveHours_(date) {
+  if (!CONFIG.activeHours.enabled) return true;
+  const hour = Number(Utilities.formatDate(date, Session.getScriptTimeZone(), 'H'));
+  const start = CONFIG.activeHours.startHour;
+  const end = CONFIG.activeHours.endHour;
+  return start <= end ? (hour >= start && hour < end) : (hour >= start || hour < end);
+}
+
+// ---------------------------------------------------------------------------
+// Alarm channels
+// ---------------------------------------------------------------------------
+function fireAlarm_(hit, attempt) {
+  const body = hit.from + '\\n' + hit.subject;
+
+  if (CONFIG.ntfy.enabled) {
+    try {
+      sendNtfy_(hit, attempt, body);
+    } catch (err) {
+      reportError_(err);
+    }
+  }
+
+  // Backups fire once, on the first alarm only — no point texting yourself 15 times.
+  if (attempt === 1 && CONFIG.sms.enabled) {
+    try {
+      GmailApp.sendEmail(CONFIG.sms.address, CONFIG.ntfy.title, body);
+    } catch (err) {
+      reportError_(err);
+    }
+  }
+
+  if (attempt === 1 && CONFIG.calendarPing.enabled) {
+    try {
+      createCalendarPing_(hit);
+    } catch (err) {
+      reportError_(err);
+    }
+  }
+
+  log_('Alarm #' + attempt + ': ' + hit.subject);
+}
+
+function sendNtfy_(hit, attempt, body) {
+  const response = UrlFetchApp.fetch(CONFIG.ntfy.server + '/' + CONFIG.ntfy.topic, {
+    method: 'post',
+    payload: body + (attempt > 1 ? '\\n(alarm ' + attempt + ')' : ''),
+    headers: {
+      Title: CONFIG.ntfy.title + (attempt > 1 ? ' (' + attempt + ')' : ''),
+      Priority: 'max',
+      Tags: 'rotating_light',
+      Click: hit.permalink || CONFIG.ntfy.clickUrl
+    },
+    muteHttpExceptions: true
+  });
+  const code = response.getResponseCode();
+  if (code >= 300) {
+    throw new Error('ntfy returned ' + code + ': ' + response.getContentText());
+  }
+}
+
+function createCalendarPing_(hit) {
+  const start = new Date(Date.now() + CONFIG.calendarPing.minutesOut * 60 * 1000);
+  const end = new Date(start.getTime() + 5 * 60 * 1000);
+  const event = CalendarApp.getDefaultCalendar()
+    .createEvent(CONFIG.ntfy.title + ': ' + hit.subject, start, end, { description: hit.permalink });
+  event.removeAllReminders();
+  event.addPopupReminder(0);
+}
+
+// ---------------------------------------------------------------------------
+// Small helpers
+// ---------------------------------------------------------------------------
+function nowEpoch_() {
+  return Math.floor(Date.now() / 1000);
+}
+
+function log_(message) {
+  if (CONFIG.debug) Logger.log(message);
+}
+
+/** Mails you at most one error report per hour, so a broken run isn't silent. */
+function reportError_(err) {
+  Logger.log('ERROR: ' + err);
+  const props = PropertiesService.getScriptProperties();
+  const last = Number(props.getProperty('lastErrorMailEpoch') || 0);
+  const now = nowEpoch_();
+  if (now - last < 3600) return;
+  props.setProperty('lastErrorMailEpoch', String(now));
+  try {
+    GmailApp.sendEmail(
+      CONFIG.errorNotifyEmail || Session.getEffectiveUser().getEmail(),
+      'Gmail Alarm error',
+      String(err && err.stack ? err.stack : err)
+    );
+  } catch (ignored) {}
+}
+`;
+
+const $ = (id) => document.getElementById(id);
+
+function jsList(value) {
+  const items = value.split(",").map(s => s.trim()).filter(Boolean);
+  if (!items.length) return "[]";
+  return "[" + items.map(s => "'" + s.replace(/'/g, "") + "'").join(", ") + "]";
+}
+
+function buildCode() {
+  const senders = jsList($("sender").value);
+  const subjects = jsList($("subject").value);
+  const both = $("both").checked;
+
+  return TEMPLATE
+    .replace(/^\s*senders:.*$/m, "  senders: " + senders + ",")
+    .replace(/^\s*subjectContains:.*$/m, "  subjectContains: " + subjects + ",")
+    .replace(/^\s*requireBoth:.*$/m, "  requireBoth: " + both + ",")
+    .replace(/^\s*topic:.*$/m, "    topic: '" + TOPIC + "',");
+}
+
+function describe() {
+  const s = $("sender").value.trim();
+  const w = $("subject").value.trim();
+  const both = $("both").checked;
+  if (!s && !w) return "Fill in at least one box \u2014 otherwise every unread email would ring the alarm, and setup() will refuse to run.";
+  if (s && w) return both
+    ? "Wakes you for mail from " + s + " with \u201c" + w + "\u201d in the subject."
+    : "Wakes you for mail from " + s + ", or any mail with \u201c" + w + "\u201d in the subject.";
+  if (s) return "Wakes you for any mail from " + s + ".";
+  return "Wakes you for any mail with \u201c" + w + "\u201d in the subject.";
+}
+
+function refresh() {
+  $("code").textContent = buildCode();
+  $("summary").textContent = describe();
+  const bothRow = $("both").closest("label");
+  const active = $("sender").value.trim() && $("subject").value.trim();
+  bothRow.style.opacity = active ? "1" : ".45";
+}
+
+async function copyText(text, statusEl, button) {
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    ok = true;
+  } catch (err) {
+    // Clipboard API is often blocked in a sandboxed frame; fall back.
+    const scratch = document.createElement("textarea");
+    scratch.value = text;
+    scratch.setAttribute("readonly", "");
+    scratch.style.position = "fixed";
+    scratch.style.opacity = "0";
+    document.body.appendChild(scratch);
+    scratch.select();
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(scratch);
+  }
+  if (ok) {
+    statusEl.textContent = "Copied.";
+    button.textContent = "Copied";
+    button.classList.add("done");
+    setTimeout(() => {
+      button.textContent = button.dataset.label;
+      button.classList.remove("done");
+      statusEl.textContent = "";
+    }, 2200);
+  } else {
+    statusEl.textContent = "Couldn't reach the clipboard \u2014 click the code and press Ctrl+C.";
+  }
+}
+
+for (const b of document.querySelectorAll("button")) b.dataset.label = b.textContent;
+
+$("copyPs").addEventListener("click", () =>
+  copyText($("psCode").textContent, $("psStatus"), $("copyPs")));
+$("copyCode").addEventListener("click", () =>
+  copyText($("code").textContent, $("codeStatus"), $("copyCode")));
+
+for (const id of ["sender", "subject"]) $(id).addEventListener("input", refresh);
+$("both").addEventListener("change", refresh);
+
+// Click the code block to select all of it, for anyone whose clipboard is locked down.
+for (const pre of document.querySelectorAll("pre")) {
+  pre.addEventListener("click", () => {
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+}
+
+refresh();
+</script>

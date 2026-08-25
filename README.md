@@ -30,6 +30,7 @@ set up from any browser, anywhere.
 
 | Path | What it is |
 | --- | --- |
+| `tools/setup.html` | Fill in two boxes, get the finished `Code.gs` to paste into Apps Script. Open it locally or publish it. |
 | `laptop/install.sh` | One-command setup for the laptop half (macOS and Linux). |
 | `laptop/install.ps1` | The same, for Windows. |
 | `laptop/alarm_listener.py` | Runs on the laptop that rings. Standard library Python, nothing to install. |
@@ -99,6 +100,10 @@ setting up from a machine where downloading and editing a file is a nuisance.
 ### 3. Apps Script: install the script
 
 Browser work — do it from any machine, not necessarily the one that rings.
+
+Open `tools/setup.html` in a browser to skip the editing: type the sender and
+subject, and it assembles the finished `Code.gs` with your topic already in
+place, ready to copy in one click. The steps below are the same thing by hand.
 
 1. Go to [script.google.com](https://script.google.com) → **New project**.
 2. Paste `apps-script/Code.gs` over the default `Code.gs`.
