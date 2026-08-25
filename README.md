@@ -34,6 +34,7 @@ set up from any browser, anywhere.
 | `laptop/install.sh` | One-command setup for the laptop half (macOS and Linux). |
 | `laptop/install.ps1` | The same, for Windows. |
 | `laptop/alarm_listener.py` | Runs on the laptop that rings. Standard library Python, nothing to install. |
+| `laptop/gmail_alarm_local.py` | Alternative: checks Gmail over IMAP from the laptop, with no Google Apps Script at all. |
 | `apps-script/Code.gs` | The Gmail-side script. All configuration lives in the `CONFIG` block at the top. |
 | `apps-script/appsscript.json` | Manifest — timezone and OAuth scopes. |
 | `gmail/filters.xml` | Importable Gmail filter that applies the `ALARM` label. |
@@ -119,6 +120,35 @@ place, ready to copy in one click. The steps below are the same thing by hand.
 6. Select **`testAlarm`** → **Run**. Your laptop should ring.
 
 That's it. The trigger is now running every minute.
+
+## Doing it without Apps Script
+
+If the Google side can't be set up — the OAuth consent screen won't complete, or
+the account can't be verified — the laptop can check Gmail itself over IMAP.
+That drops Apps Script, the consent screen, and the ntfy relay: one script, one
+machine.
+
+```bash
+python3 gmail_alarm_local.py --setup   # credentials and rules
+python3 gmail_alarm_local.py           # start watching
+python3 gmail_alarm_local.py --once    # check once and exit
+```
+
+It needs `alarm_listener.py` beside it (the siren lives there) and an
+[App Password](https://myaccount.google.com/apppasswords), which requires
+2-Step Verification on the account — Gmail stopped accepting ordinary passwords
+over IMAP in 2022, so there is no way around that one. The password is stored in
+`~/.gmail-alarm/local-config.json`, readable by anyone with your login on this
+machine; revoke it from the same Google page whenever you like.
+
+Mail is fetched with `BODY.PEEK` and the mailbox opened read-only, so checking
+never marks anything as read — opening the email is still what stops the alarm.
+
+The trade-off against the Apps Script version: matching only happens while the
+laptop is awake and this is running. The Apps Script version keeps watching from
+Google's servers even when the laptop is off, and rings the moment it comes
+back. Here, an email that arrives while the machine is asleep is found on the
+next check after it wakes.
 
 ## Keeping the laptop awake
 
