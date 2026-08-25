@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+  Gmail filter for the alarm script.
+
+  Import: Gmail -> Settings -> Filters and Blocked Addresses ->
+          Import filters -> choose this file -> Open file -> Create filters.
+
+  Edit the `from` and `subject` values first so they match CONFIG in
+  apps-script/Code.gs. Two entries are included: one that requires sender AND
+  subject, one that fires on the sender alone. Delete whichever you don't want.
+
+  Deliberately NOT set here: shouldMarkAsRead and shouldArchive. The script
+  treats "you opened the email" as your acknowledgement and stops ringing, so a
+  filter that pre-reads or archives the mail would silence the alarm.
+-->
+<feed xmlns='http://www.w3.org/2005/Atom' xmlns:apps='http://schemas.google.com/apps/2006'>
+  <title>Mail Filters</title>
+
+  <entry>
+    <category term='filter'></category>
+    <title>ALARM — sender + subject</title>
+    <content></content>
+    <apps:property name='from' value='alerts@example.com'/>
+    <apps:property name='subject' value='URGENT'/>
+    <apps:property name='label' value='ALARM'/>
+    <apps:property name='shouldStar' value='true'/>
+    <apps:property name='shouldNeverSpam' value='true'/>
+    <apps:property name='shouldAlwaysMarkAsImportant' value='true'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
+  </entry>
+
+  <entry>
+    <category term='filter'></category>
+    <title>ALARM — sender only</title>
+    <content></content>
+    <apps:property name='from' value='pager@example.com'/>
+    <apps:property name='label' value='ALARM'/>
+    <apps:property name='shouldStar' value='true'/>
+    <apps:property name='shouldNeverSpam' value='true'/>
+    <apps:property name='shouldAlwaysMarkAsImportant' value='true'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
+  </entry>
+
+</feed>
