@@ -28,6 +28,7 @@ find out what to match on.
 """
 
 import argparse
+import asyncio
 import os
 import sys
 import time
@@ -37,6 +38,8 @@ try:
                                 force_max_volume, prevent_sleep)
 except ImportError:
     sys.exit("alarm_listener.py must sit in the same folder as this script.")
+
+_LOOP = None
 
 POLL_SECONDS = 2
 ALARM_SECONDS = 45
@@ -76,6 +79,37 @@ def match_notification(app_name, title, body, senders, subjects, require_both=Tr
 # ---------------------------------------------------------------------------
 # Windows notification listener
 # ---------------------------------------------------------------------------
+def run_sync(operation):
+    """
+    winsdk exposes WinRT async methods with an _async suffix, returning an
+    awaitable. There is no sync variant, so drive one to completion on a
+    long-lived loop rather than spinning up a new one every poll.
+    """
+    global _LOOP
+    if _LOOP is None:
+        _LOOP = asyncio.new_event_loop()
+
+    async def wait():
+        return await operation
+
+    return _LOOP.run_until_complete(wait())
+
+
+def pick_attr(obj, *names):
+    """
+    Returns the first attribute that exists, called if it's callable.
+
+    winsdk has moved static WinRT properties between plain attributes and
+    getter methods across versions, so probing beats hard-coding one spelling.
+    """
+    for name in names:
+        attribute = getattr(obj, name, None)
+        if attribute is None:
+            continue
+        return attribute() if callable(attribute) else attribute
+    return None
+
+
 def get_listener():
     """Returns the WinRT listener, or exits with something actionable."""
     if os.name != "nt":
@@ -90,36 +124,73 @@ def get_listener():
                  "    py -m pip install winsdk")
 
     listener = UserNotificationListener.current
-    status = listener.request_access_sync()
+    try:
+        status = run_sync(listener.request_access_async())
+    except Exception as err:
+        sys.exit("Couldn't ask Windows for notification access: {}\n"
+                 "Run with --probe and send me the output.".format(err))
+
     if status != UserNotificationListenerAccessStatus.ALLOWED:
-        sys.exit("Windows denied access to notifications.\n"
+        sys.exit("Windows denied access to notifications (status: {}).\n"
                  "Turn it on: Settings > Privacy & security > Notifications >\n"
-                 '"Let apps access your notifications".')
+                 '"Let apps access your notifications".'.format(status))
     return listener, NotificationKinds
 
 
-def read_notification(notification):
+def get_notifications(listener, notification_kinds):
+    return run_sync(listener.get_notifications_async(notification_kinds.TOAST)) or []
+
+
+def read_notification(notification, debug=False):
     """Flattens one WinRT notification into (app_name, title, body)."""
     app_name = ""
     try:
         app_name = notification.app_info.display_info.display_name or ""
-    except Exception:
-        pass
+    except Exception as err:
+        if debug:
+            print("  (app name unavailable: {})".format(err))
 
     lines = []
     try:
         from winsdk.windows.ui.notifications import KnownNotificationBindings
 
-        binding = notification.notification.visual.get_binding(
-            KnownNotificationBindings.get_toast_generic())
+        generic = pick_attr(KnownNotificationBindings, "toast_generic", "get_toast_generic")
+        binding = notification.notification.visual.get_binding(generic)
         if binding:
             lines = [element.text for element in binding.get_text_elements()]
-    except Exception:
-        pass
+    except Exception as err:
+        if debug:
+            print("  (text unavailable: {})".format(err))
 
     title = lines[0] if lines else ""
     body = " ".join(lines[1:]) if len(lines) > 1 else ""
     return app_name, title, body
+
+
+def probe():
+    """
+    Prints what this winsdk build actually exposes.
+
+    The API surface differs between winsdk versions and I can't run Windows to
+    check, so this turns a guessing game into one round trip.
+    """
+    print("python  :", sys.version.split()[0])
+    try:
+        import winsdk
+        print("winsdk  :", getattr(winsdk, "__version__", "(no __version__)"))
+    except ImportError:
+        sys.exit("winsdk not installed:  py -m pip install winsdk")
+
+    from winsdk.windows.ui.notifications.management import UserNotificationListener
+    from winsdk.windows.ui.notifications import KnownNotificationBindings
+
+    listener = UserNotificationListener.current
+    print("\nUserNotificationListener members:")
+    for name in sorted(n for n in dir(listener) if not n.startswith("_")):
+        print("   ", name)
+    print("\nKnownNotificationBindings members:")
+    for name in sorted(n for n in dir(KnownNotificationBindings) if not n.startswith("_")):
+        print("   ", name)
 
 
 def watch(args):
@@ -146,13 +217,13 @@ def watch(args):
 
     while True:
         try:
-            for notification in listener.get_notifications(notification_kinds.TOAST):
+            for notification in get_notifications(listener, notification_kinds):
                 key = notification.id
                 if key in seen:
                     continue
                 seen.add(key)
 
-                app_name, title, body = read_notification(notification)
+                app_name, title, body = read_notification(notification, debug=args.list)
 
                 if args.list:
                     print("[{}] app={!r}\n      title={!r}\n      body={!r}".format(
@@ -188,9 +259,15 @@ def main():
                         help="match sender OR subject (default: both must match)")
     parser.add_argument("--any-app", dest="any_app", action="store_true",
                         help="match notifications from any app, not just mail apps")
+    parser.add_argument("--probe", action="store_true",
+                        help="print what this winsdk build exposes, for debugging")
     parser.add_argument("--list", action="store_true",
                         help="print every notification instead of matching, to see their shape")
     args = parser.parse_args()
+
+    if args.probe:
+        probe()
+        return
 
     if not args.list and not args.sender and not args.subject:
         parser.error("give --from and/or --subject, or use --list to see what arrives")
