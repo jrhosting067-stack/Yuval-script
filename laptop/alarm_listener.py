@@ -109,19 +109,23 @@ class Alarm:
         self.seconds = seconds
         self.silence = threading.Event()
         self._thread = None
+        self._deadline = 0.0
 
     def ring(self):
-        """Starts (or restarts) a siren burst in the background."""
+        """Starts a siren burst, or extends the one already running."""
         self.silence.clear()
+        # Push the deadline out rather than returning early when a burst is
+        # already in flight: an escalation arriving just as the previous burst
+        # expires must not be swallowed by the dying thread.
+        self._deadline = time.time() + self.seconds
         if self._thread and self._thread.is_alive():
-            return                      # already ringing; escalations just extend it
+            return
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
     def _loop(self):
         force_max_volume()
-        deadline = time.time() + self.seconds
-        while time.time() < deadline and not self.silence.is_set():
+        while time.time() < self._deadline and not self.silence.is_set():
             if self.player:
                 self.player(self.wav_path)
             else:
