@@ -35,6 +35,7 @@ set up from any browser, anywhere.
 | `laptop/install.ps1` | The same, for Windows. |
 | `laptop/alarm_listener.py` | Runs on the laptop that rings. Standard library Python, nothing to install. |
 | `laptop/gmail_alarm_local.py` | Alternative: checks Gmail over IMAP from the laptop, with no Google Apps Script at all. |
+| `laptop/notification_watcher.py` | Alternative: watches Windows notifications, so it needs no mail credentials whatsoever. |
 | `apps-script/Code.gs` | The Gmail-side script. All configuration lives in the `CONFIG` block at the top. |
 | `apps-script/appsscript.json` | Manifest — timezone and OAuth scopes. |
 | `gmail/filters.xml` | Importable Gmail filter that applies the `ALARM` label. |
@@ -149,6 +150,36 @@ laptop is awake and this is running. The Apps Script version keeps watching from
 Google's servers even when the laptop is off, and rings the moment it comes
 back. Here, an email that arrives while the machine is asleep is found on the
 next check after it wakes.
+
+## Doing it with no credentials at all
+
+Windows keeps every notification in an API that local programs can read with
+your permission, so the alarm can watch the notification instead of the mailbox.
+No Google account, no password, no App Password, no consent screen.
+
+```powershell
+py -m pip install winsdk
+py notification_watcher.py --list                          # see what yours look like
+py notification_watcher.py --from datadog --subject URGENT
+```
+
+Run `--list` first. Notification wording differs between Chrome, Thunderbird and
+Outlook, and it is the only way to know what text you actually have to match on.
+
+Two things must be true or nothing ever arrives:
+
+- Settings → Privacy & security → Notifications → **Let apps access your
+  notifications** must be on.
+- Something must be raising mail notifications in the first place. **Gmail in a
+  browser only notifies while a Gmail tab is open** — close the tab and the
+  alarm goes deaf. A desktop client (Thunderbird, Outlook) notifies regardless,
+  which is the more reliable arrangement, and signing in to one of those uses
+  Google's normal login rather than the consent screen that blocks a personal
+  Apps Script.
+
+This is the least reliable of the three approaches — it depends on notification
+text that no one guarantees the shape of — but it is the only one that needs
+nothing from Google at all.
 
 ## Keeping the laptop awake
 
