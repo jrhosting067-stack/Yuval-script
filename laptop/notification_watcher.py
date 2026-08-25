@@ -259,6 +259,9 @@ def main():
                         help="match sender OR subject (default: both must match)")
     parser.add_argument("--any-app", dest="any_app", action="store_true",
                         help="match notifications from any app, not just mail apps")
+    parser.add_argument("--check", metavar="TEXT", action="append", default=[],
+                        help="test your terms against sample text and exit, "
+                             "instead of waiting for a real notification")
     parser.add_argument("--probe", action="store_true",
                         help="print what this winsdk build exposes, for debugging")
     parser.add_argument("--list", action="store_true",
@@ -267,6 +270,15 @@ def main():
 
     if args.probe:
         probe()
+        return
+
+    if args.check:
+        if not args.sender and not args.subject:
+            parser.error("--check needs --from and/or --subject to test against")
+        for text in args.check:
+            hit = match_notification("Mail", text, "", args.sender, args.subject,
+                                     require_both=not args.either, any_app=True)
+            print("{}  {}".format("RINGS  " if hit else "ignores", text))
         return
 
     if not args.list and not args.sender and not args.subject:
