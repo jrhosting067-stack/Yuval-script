@@ -31,6 +31,7 @@ set up from any browser, anywhere.
 | Path | What it is |
 | --- | --- |
 | `laptop/install.sh` | One-command setup for the laptop half (macOS and Linux). |
+| `laptop/install.ps1` | The same, for Windows. |
 | `laptop/alarm_listener.py` | Runs on the laptop that rings. Standard library Python, nothing to install. |
 | `apps-script/Code.gs` | The Gmail-side script. All configuration lives in the `CONFIG` block at the top. |
 | `apps-script/appsscript.json` | Manifest — timezone and OAuth scopes. |
@@ -47,14 +48,22 @@ system, and both halves of the setup need it.
 
 Then, on the laptop that should ring — one command does the whole laptop half
 (downloads the listener, plays a test siren, optionally sets up autostart, and
-prints the topic to paste into Apps Script):
+prints the topic to paste into Apps Script). It generates a random topic for
+you, so you can skip picking one.
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/jrhosting067-stack/Yuval-script/HEAD/laptop/install.ps1 | iex
+```
+
+**macOS / Linux:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jrhosting067-stack/Yuval-script/HEAD/laptop/install.sh | bash
 ```
 
-It generates a random topic for you, so you can skip picking one. To do it by
-hand instead:
+To do it by hand instead:
 
 ```bash
 python3 alarm_listener.py your-topic-here --test   # siren now, then exit
@@ -117,7 +126,10 @@ matter:
 | --- | --- | --- |
 | **macOS** | `caffeinate -s python3 alarm_listener.py your-topic` | automatic |
 | **Linux** | `systemd-inhibit --what=sleep python3 alarm_listener.py your-topic` | automatic |
-| **Windows** | Settings → System → Power → Screen and sleep → *Never* (plugged in) | set it by hand |
+| **Windows** | automatic (idle sleep only — also set Settings → System → Power → Screen and sleep → *Never* when plugged in) | set it by hand |
+
+On Windows the listener asks the OS to suppress idle sleep while it runs, which
+needs no admin rights but does not survive closing the lid or choosing Sleep.
 
 The listener forces output volume to 100% on macOS and Linux before each siren.
 Windows has no built-in command for that, so set the volume yourself. On every

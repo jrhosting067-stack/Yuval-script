@@ -86,6 +86,29 @@ def find_player():
     return None
 
 
+def prevent_sleep():
+    """
+    Ask Windows to stay awake while we're listening.
+
+    macOS and Linux have caffeinate and systemd-inhibit to wrap the process in;
+    Windows has no equivalent command, so the process asks the OS directly.
+    Needs no admin rights. Note this blocks *idle* sleep only — closing the lid
+    or choosing Sleep from the menu still sleeps the machine, and a sleeping
+    laptop cannot ring.
+    """
+    if SYSTEM != "Windows":
+        return False
+    try:
+        import ctypes
+
+        ES_CONTINUOUS = 0x80000000
+        ES_SYSTEM_REQUIRED = 0x00000001
+        return ctypes.windll.kernel32.SetThreadExecutionState(
+            ES_CONTINUOUS | ES_SYSTEM_REQUIRED) != 0
+    except Exception:
+        return False
+
+
 def force_max_volume():
     """Best effort — a muted laptop is the most common reason an alarm fails."""
     try:
@@ -236,6 +259,9 @@ def main():
               "which will not wake you. See the README.")
 
     alarm = Alarm(wav_path, player, args.seconds)
+
+    if prevent_sleep():
+        print("Idle sleep suppressed while this is running. Keep the lid open.")
 
     if args.test:
         print("Ringing for {}s...".format(args.seconds))
