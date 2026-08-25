@@ -47,6 +47,17 @@ if (-not $python) {
 # or guesses the string can ring this laptop.
 $topic = $env:GMAIL_ALARM_TOPIC
 $generated = $false
+$reused = $false
+
+# Reuse the saved topic on a re-run. Generating a fresh one would leave Apps
+# Script publishing to the old topic and the listener subscribed to the new one:
+# both halves healthy, no alarm, and nothing to see in either log.
+$topicFile = Join-Path $InstallDir 'topic'
+if (-not $topic -and (Test-Path $topicFile)) {
+    $saved = (Get-Content $topicFile -ErrorAction SilentlyContinue | Select-Object -First 1)
+    if ($saved) { $topic = $saved.Trim(); $reused = $true }
+}
+
 if (-not $topic) {
     $bytes = [byte[]]::new(6)
     [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
@@ -94,8 +105,9 @@ $pythonInvocation "$ScriptPath" $topic
 
 # --- What's left -----------------------------------------------------------
 Write-Step 'Laptop side done.'
-if ($generated) { Write-Host 'Your topic (generated, keep it private):' }
-else            { Write-Host 'Your topic:' }
+if ($generated)  { Write-Host 'Your topic (generated, keep it private):' }
+elseif ($reused) { Write-Host 'Your topic (reused from the last install):' }
+else             { Write-Host 'Your topic:' }
 Write-Host "`n    $topic`n"
 
 Write-Host 'Now do the Gmail side at https://script.google.com:'

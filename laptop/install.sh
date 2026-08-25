@@ -50,6 +50,14 @@ fi
 # The topic is the only secret in the system, so a generated one beats whatever
 # a human would type. Public ntfy topics are unauthenticated: anyone who knows
 # or guesses the string can ring this laptop.
+# Reuse the saved topic on a re-run. Generating a fresh one would leave Apps
+# Script publishing to the old topic and the listener subscribed to the new one:
+# both halves healthy, no alarm, and nothing to see in either log.
+if [ -z "$TOPIC" ] && [ -s "$INSTALL_DIR/topic" ]; then
+  TOPIC="$(cat "$INSTALL_DIR/topic")"
+  REUSED=1
+fi
+
 if [ -z "$TOPIC" ]; then
   if command -v openssl >/dev/null 2>&1; then
     TOPIC="gmail-alarm-$(openssl rand -hex 6)"
@@ -154,6 +162,8 @@ fi
 say "Laptop side done."
 if [ "${GENERATED:-0}" = "1" ]; then
   echo "Your topic (generated, keep it private):"
+elif [ "${REUSED:-0}" = "1" ]; then
+  echo "Your topic (reused from the last install):"
 else
   echo "Your topic:"
 fi
