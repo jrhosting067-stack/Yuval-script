@@ -12,7 +12,8 @@ email arrives ──▶ Gmail filter ──▶ label: ALARM
                                       │
               every-minute trigger ──▶ Code.gs searches for unread matches
                                       │
-                                      ├─▶ ntfy push, Priority: max  ──▶ 🔔 phone
+                                      ├─▶ ntfy topic ──┬─▶ 🔔 phone (ntfy app)
+                                      │                └─▶ 🔔 laptop (alarm_listener.py)
                                       ├─▶ (optional) SMS via carrier gateway
                                       └─▶ (optional) Calendar popup
                                       │
@@ -26,8 +27,13 @@ email arrives ──▶ Gmail filter ──▶ label: ALARM
 | `apps-script/Code.gs` | The script. All configuration lives in the `CONFIG` block at the top. |
 | `apps-script/appsscript.json` | Manifest — timezone and OAuth scopes. |
 | `gmail/filters.xml` | Importable Gmail filter that applies the `ALARM` label. |
+| `laptop/alarm_listener.py` | Runs on a laptop and sounds a siren through its speakers. Only needed if the laptop is your alarm device. |
 
 ## Setup (about 10 minutes)
+
+**Alarm device.** Steps 1 and 3 below assume a phone. If the laptop itself
+should ring, see [Ringing a laptop](#ringing-a-laptop-instead-of-a-phone) and do
+that instead of step 1 — steps 2 and 3 are the same either way.
 
 ### 1. Phone: install ntfy
 
@@ -123,6 +129,63 @@ Both fire once, on the first alarm only.
 **`activeHours`** — off by default. Turn it on to only ring during a window
 (e.g. `startHour: 22, endHour: 8` for overnight on-call). The window may cross
 midnight.
+
+## Ringing a laptop instead of a phone
+
+Apps Script runs on Google's servers, so it can't make a laptop make noise. The
+laptop needs something local listening. `laptop/alarm_listener.py` holds an open
+connection to the same ntfy topic and plays a loud two-tone siren through the
+speakers whenever a message arrives — including the every-minute escalation
+repeats, which stop when you open the email.
+
+Python 3.7+, standard library only. Nothing to install, and no Gmail credentials
+ever touch the laptop — it only ever sees the ntfy topic.
+
+```bash
+python3 alarm_listener.py your-topic-here     # start listening
+python3 alarm_listener.py your-topic --test   # ring right now, then exit
+```
+
+Press **Enter** to silence the current siren, Ctrl+C to stop listening. Run
+`--test` first and make sure it's genuinely loud enough to wake you.
+
+### The part that will actually catch you out
+
+**A sleeping laptop has no network connection and will not ring.** This is the
+one real weakness of using a laptop instead of a phone — a phone stays reachable
+when its screen is off, a sleeping laptop does not. Keep it awake for the hours
+that matter:
+
+| | Keep it awake | Force volume up |
+| --- | --- | --- |
+| **macOS** | `caffeinate -s python3 alarm_listener.py your-topic` | automatic |
+| **Linux** | `systemd-inhibit --what=sleep python3 alarm_listener.py your-topic` | automatic |
+| **Windows** | Settings → System → Power → Screen and sleep → *Never* (plugged in) | set it by hand |
+
+The script forces output volume to 100% on macOS and Linux before each siren.
+Windows has no built-in command for that, so set the volume yourself. On every
+platform: **unplug the headphones**.
+
+Closing the lid sleeps most laptops regardless of the above — on macOS that
+can't be prevented without an external display or third-party tooling, so leave
+the lid open.
+
+### Other things to know
+
+- **Python.** Linux has it. macOS prompts to install Command Line Tools the
+  first time you run `python3`. Windows usually doesn't have it —
+  `winget install Python.Python.3.12`, then use `py` instead of `python3`.
+- **Autostart** so you don't have to remember: a Login Item wrapping the
+  `caffeinate` line (macOS), a user systemd service (Linux), or a Task Scheduler
+  task set to *Run whether user is logged on or not* (Windows).
+- **Dropped connections** are handled — it reconnects with backoff, then asks
+  ntfy for anything published while it was offline, and dedupes by message id so
+  a replayed alarm doesn't ring twice.
+- **Zero-install alternative**: open [ntfy.sh/app](https://ntfy.sh/app) in a
+  browser tab and subscribe to the topic. It works, but the tab has to stay
+  open, browsers throttle background tabs, and you get a short notification
+  ding rather than a sustained siren. Fine as a backup, not as the thing you
+  bet a flight on.
 
 ## Things worth knowing
 
